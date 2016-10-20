@@ -2,6 +2,7 @@
 
 class Plugin {
     constructor(serverless, options) {
+        this.serverless = serverless;
         this.options = options;
 
         this.commands = {
@@ -14,6 +15,7 @@ class Plugin {
         };
 
         this.hooks = {
+            'before:deploy:createDeploymentArtifacts': this.beforeDeployCreateDeploymentArtifacts.bind(this),
             'before:deploy:resources': this.beforeDeployResources.bind(this),
             'deploy:resources': this.deployResources.bind(this),
             'before:deploy:functions': this.beforeDeployFunctions.bind(this),
@@ -22,6 +24,7 @@ class Plugin {
     }
 
     beforeDeployFunctions() {
+        console.dir(this.serverless);
         console.log('beforeDeployResources');
     }
 
