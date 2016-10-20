@@ -15,28 +15,12 @@ class Plugin {
         };
 
         this.hooks = {
-            'before:deploy:createDeploymentArtifacts': this.beforeDeployCreateDeploymentArtifacts.bind(this),
-            'before:deploy:resources': this.beforeDeployResources.bind(this),
-            'deploy:resources': this.deployResources.bind(this),
-            'before:deploy:functions': this.beforeDeployFunctions.bind(this),
-            'deploy:functions': this.deployFunctions.bind(this)
+            'before:deploy:createDeploymentArtifacts': this.beforeDeployCreateDeploymentArtifacts.bind(this)
         };
     }
 
-    beforeDeployFunctions() {
+    beforeDeployCreateDeploymentArtifacts() {
         console.dir(this.serverless);
-        console.log('beforeDeployResources');
-    }
-
-    deployFunctions() {
-        console.log('deployFunction');
-    }
-
-    deployResources() {
-        console.log('deployResources');
-    }
-
-    beforeDeployResources() {
         console.log('beforeDeployResources');
     }
 }
