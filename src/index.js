@@ -21,6 +21,7 @@ class Plugin {
     }
 
     beforeDeployCreateDeploymentArtifacts() {
+        this.serverless.cli.log('Adding Cloudwatch to Sumologic lambda function');
         let functionPath = this.getEnvFilePath();
 
         if (!fs.existsSync(functionPath)) {
@@ -45,6 +46,7 @@ class Plugin {
     }
 
     deployCompileEvents() {
+        this.serverless.cli.log('Generating subscription filters and lambda function log groups');
         let filterPattern = !!this.serverless.service.custom.shipLogs.filterPattern ? this.serverless.service.custom.shipLogs.filterPattern : "[timestamp=*Z, request_id=\"*-*\", event]";
 
         const filterBaseStatement = {
@@ -114,6 +116,7 @@ class Plugin {
     }
 
     afterDeployDeploy() {
+        this.serverless.cli.log('Removing temporary Cloudwatch to Sumologic lambda function');
         let functionPath = this.getEnvFilePath();
 
         try {
