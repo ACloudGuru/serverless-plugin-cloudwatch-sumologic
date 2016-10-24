@@ -116,8 +116,15 @@ class Plugin {
     afterDeployDeploy() {
         let functionPath = this.getEnvFilePath();
 
-        if (fs.existsSync(functionPath)) {
-            fs.rmdirSync(functionPath);
+        try {
+            if (fs.existsSync(functionPath)) {
+                if (fs.existsSync(path.join(functionPath, 'handler.js'))) {
+                    fs.unlinkSync(path.join(functionPath, 'handler.js'));
+                }
+                fs.rmdirSync(functionPath);
+            }
+        } catch (err) {
+            throw new Error(err);
         }
     }
 }
