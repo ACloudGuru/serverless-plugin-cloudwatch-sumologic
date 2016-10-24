@@ -11,7 +11,8 @@ class Plugin {
 
         this.hooks = {
             'before:deploy:createDeploymentArtifacts': this.beforeDeployCreateDeploymentArtifacts.bind(this),
-            'deploy:compileEvents': this.deployCompileEvents.bind(this)
+            'deploy:compileEvents': this.deployCompileEvents.bind(this),
+            'after:deploy:deploy': this.afterDeployDeploy.bind(this)
         };
     }
 
@@ -20,43 +21,31 @@ class Plugin {
     }
 
     beforeDeployCreateDeploymentArtifacts() {
-        var functionPath = this.getEnvFilePath();
+        let functionPath = this.getEnvFilePath();
 
         if (!fs.existsSync(functionPath)) {
             fs.mkdirSync(functionPath);
         }
 
-        var templatePath = path.resolve(__dirname, '../sumologic-function/handler.template.js');
+        let templatePath = path.resolve(__dirname, '../sumologic-function/handler.template.js');
 
-        var templateFile = fs.readFileSync(templatePath, 'utf-8');
+        let templateFile = fs.readFileSync(templatePath, 'utf-8');
 
-        var collectorUrl = this.serverless.service.custom.shipLogs.collectorUrl;
+        let collectorUrl = this.serverless.service.custom.shipLogs.collectorUrl;
 
-        var handlerFunction = templateFile.replace('%collectorUrl%', collectorUrl);
+        let handlerFunction = templateFile.replace('%collectorUrl%', collectorUrl);
 
         fs.writeFileSync(path.join(functionPath, 'handler.js'), handlerFunction);
-
-        var functionNames = Object.keys(this.serverless.service.functions);
 
         this.serverless.service.functions.sumologicShippingFunction = {
             handler: '.temp/sumologic-shipping-function',
             events: [],
             name: 'sumologic-shipping-function'
         };
-
-        console.log(functionNames);
-
-        console.log(collectorUrl);
-
-        console.log(functionPath);
-
-        console.log(templatePath);
-
-        console.log(handlerFunction);
     }
 
     deployCompileEvents() {
-        var filterPattern = !!this.serverless.service.custom.shipLogs.filterPattern ? this.serverless.service.custom.shipLogs.filterPattern : "[timestamp=*Z, request_id=\"*-*\", event]";
+        let filterPattern = !!this.serverless.service.custom.shipLogs.filterPattern ? this.serverless.service.custom.shipLogs.filterPattern : "[timestamp=*Z, request_id=\"*-*\", event]";
 
         console.dir(this.serverless.service.provider.compiledCloudFormationTemplate);
 
@@ -82,7 +71,7 @@ class Plugin {
         Object.freeze(filterBaseStatement); // Make it immutable
         Object.freeze(logGroupBaseStatement);
 
-        var cloudwatchLogsLambdaPermission = {
+        let cloudwatchLogsLambdaPermission = {
             Type: "AWS::Lambda::Permission",
             Properties: {
                 FunctionName: {
@@ -108,8 +97,6 @@ class Plugin {
                 filterStatement.Properties.LogGroupName = '/aws/lambda/' + functionObj.name;
                 logGroupStatement.Properties.LogGroupName = '/aws/lambda/' + functionObj.name;
 
-                console.log(filterStatement);
-
                 let filterStatementName = functionName + 'SumoLogicSubscriptionFilter';
                 let logGroupStatementName = functionName + 'LogGroup';
 
@@ -126,6 +113,14 @@ class Plugin {
                 _.merge(this.serverless.service.provider.compiledCloudFormationTemplate.Resources, newFilterStatement, newLogGroupStatement);
             }
         });
+    }
+
+    afterDeployDeploy() {
+        let functionPath = this.getEnvFilePath();
+
+        if (!fs.existsSync(functionPath)) {
+            fs.rmDirSync(functionPath);
+        }
     }
 }
 
