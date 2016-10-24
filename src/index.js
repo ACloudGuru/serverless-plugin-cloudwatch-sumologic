@@ -9,7 +9,8 @@ class Plugin {
         this.options = options;
 
         this.hooks = {
-            'before:deploy:createDeploymentArtifacts': this.beforeDeployCreateDeploymentArtifacts.bind(this)
+            'before:deploy:createDeploymentArtifacts': this.beforeDeployCreateDeploymentArtifacts.bind(this),
+            'deploy:compileEvents': this.deployCompileEvents.bind(this)
         };
     }
 
@@ -51,6 +52,10 @@ class Plugin {
         console.log(templatePath);
 
         console.log(handlerFunction);
+    }
+
+    deployCompileEvents() {
+        console.log(this.serverless);
     }
 }
 
