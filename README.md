@@ -1,4 +1,4 @@
-# serverless-plugin-cloudwatch-sumologic
+# serverless-plugin-cloudwatch-sumologic [![Build Status](https://travis-ci.org/ACloudGuru/serverless-plugin-cloudwatch-sumologic.svg?branch=master)](https://travis-ci.org/ACloudGuru/serverless-plugin-cloudwatch-sumologic)
 Plugin which auto-subscribes a log delivery lambda function to lambda log groups created by Serverless
 
 # Installation
