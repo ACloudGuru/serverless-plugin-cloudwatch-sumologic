@@ -46,7 +46,7 @@ class Plugin {
 
     deployCompileEvents() {
         let filterPattern = !!this.serverless.service.custom.shipLogs.filterPattern ? this.serverless.service.custom.shipLogs.filterPattern : "[timestamp=*Z, request_id=\"*-*\", event]";
-        
+
         const filterBaseStatement = {
             Type: "AWS::Logs::SubscriptionFilter",
             Properties: {
@@ -116,8 +116,8 @@ class Plugin {
     afterDeployDeploy() {
         let functionPath = this.getEnvFilePath();
 
-        if (!fs.existsSync(functionPath)) {
-            fs.rmDirSync(functionPath);
+        if (fs.existsSync(functionPath)) {
+            fs.rmdirSync(functionPath);
         }
     }
 }
