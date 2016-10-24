@@ -46,9 +46,7 @@ class Plugin {
 
     deployCompileEvents() {
         let filterPattern = !!this.serverless.service.custom.shipLogs.filterPattern ? this.serverless.service.custom.shipLogs.filterPattern : "[timestamp=*Z, request_id=\"*-*\", event]";
-
-        console.dir(this.serverless.service.provider.compiledCloudFormationTemplate);
-
+        
         const filterBaseStatement = {
             Type: "AWS::Logs::SubscriptionFilter",
             Properties: {
