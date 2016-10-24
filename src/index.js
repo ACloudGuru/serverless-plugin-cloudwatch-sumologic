@@ -1,7 +1,8 @@
 'use strict';
 
-var path = require('path');
-var fs = require('fs');
+const path = require('path');
+const fs = require('fs');
+const _ = require('lodash');
 
 class Plugin {
     constructor(serverless, options) {
@@ -55,41 +56,77 @@ class Plugin {
     }
 
     deployCompileEvents() {
-        console.log(this.serverless);
+        var filterPattern = !!this.serverless.service.custom.shipLogs.filterPattern ? this.serverless.service.custom.shipLogs.filterPattern : "[timestamp=*Z, request_id=\"*-*\", event]";
+
+        console.dir(this.serverless.service.provider.compiledCloudFormationTemplate);
+
+        const filterBaseStatement = {
+            Type: "AWS::Logs::SubscriptionFilter",
+            Properties: {
+                DestinationArn: {
+                    "Fn::GetAtt": [
+                        "SumologicShippingFunctionLambdaFunction",
+                        "Arn"
+                    ]
+                },
+                FilterPattern: filterPattern
+            },
+            DependsOn: ["cloudwatchLogsLambdaPermission"]
+        }
+
+        const logGroupBaseStatement = {
+            Type: "AWS::Logs::LogGroup",
+            Properties: {}
+        };
+
+        Object.freeze(filterBaseStatement); // Make it immutable
+        Object.freeze(logGroupBaseStatement);
+
+        var cloudwatchLogsLambdaPermission = {
+            Type: "AWS::Lambda::Permission",
+            Properties: {
+                FunctionName: {
+                    "Fn::GetAtt": [
+                        "SumologicShippingFunctionLambdaFunction",
+                        "Arn"
+                    ]
+                },
+                Action: "lambda:InvokeFunction",
+                Principal: "logs.us-east-1.amazonaws.com"
+            }
+        }
+
+        this.serverless.service.provider.compiledCloudFormationTemplate.Resources.cloudwatchLogsLambdaPermission = cloudwatchLogsLambdaPermission;
+
+        this.serverless.service.getAllFunctions().forEach((functionName) => {
+            if (functionName !== 'sumologicShippingFunction'){
+                const functionObj = this.serverless.service.getFunction(functionName);
+
+                let filterStatement = filterBaseStatement;
+                let logGroupStatement = logGroupBaseStatement;
+
+                filterStatement.Properties.LogGroupName = '/aws/lambda/' + functionObj.name;
+                logGroupStatement.Properties.LogGroupName = '/aws/lambda/' + functionObj.name;
+
+                console.log(filterStatement);
+
+                let filterStatementName = functionName + 'SumoLogicSubscriptionFilter';
+                let logGroupStatementName = functionName + 'LogGroup';
+
+                filterStatement.DependsOn.push(logGroupStatementName);
+
+                let newFilterStatement = {
+                    [`${filterStatementName}`]: filterStatement
+                };
+
+                let newLogGroupStatement = {
+                    [`${logGroupStatementName}`]: logGroupStatement
+                };
+
+                _.merge(this.serverless.service.provider.compiledCloudFormationTemplate.Resources, newFilterStatement, newLogGroupStatement);
+            }
+        });
     }
 }
 
 module.exports = Plugin;
-
-// 'use strict';
-
-// class Deploy {
-//   constructor(serverless, options) {
-//     this.options = options;
-
-//     this.commands = {
-//       deploy: {
-//         lifecycleEvents: [
-//           'functions'
-//         ],
-//         options: {
-//           function: {
-//             usage: 'Specify the function you want to deploy (e.g. "--function myFunction" or "-f myFunction")',
-//             required: true,
-//             shortcut: 'f'
-//           }
-//         }
-//       },
-//     };
-
-//     this.hooks = {
-//       'deploy:functions': this.deployFunction.bind(this)
-//     }
-//   }
-
-//   deployFunction() {
-//     console.log('Deploying function: ', this.options.function);
-//   }
-// }
-
-// module.exports = Deploy;
