@@ -39,7 +39,7 @@ class Plugin {
         fs.writeFileSync(path.join(functionPath, 'handler.js'), handlerFunction);
 
         this.serverless.service.functions.sumologicShippingFunction = {
-            handler: '.temp/sumologic-shipping-function',
+            handler: 'sumologic-function/handler.handler',
             events: [],
             name: 'sumologic-shipping-function'
         };
