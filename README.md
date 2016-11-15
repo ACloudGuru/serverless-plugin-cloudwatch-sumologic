@@ -7,14 +7,15 @@ Plugin which auto-subscribes a log delivery lambda function to lambda log groups
 # Configuration
 1. First follow [this guide](https://help.sumologic.com/Send_Data/Sources/HTTP_Source) to create a new collector and http source on Sumologic.
 2. Add the following custom variables to your `serverless.yml` file.
-    ```
-    custom:
-        shipLogs:
-            # Required
-            collectorUrl: Paste your url from step 1. here
-            # Optional, default pattern is "[timestamp=*Z, request_id=\"*-*\", event]"
-            filterPattern: "[timestamp=*Z, request_id=\"*-*\", correlation_id=\"*-*\", event]"
-    ```
+
+```yaml
+custom:
+    shipLogs:
+        # Required
+        collectorUrl: Paste your url from step 1. here
+        # Optional, default pattern is "[timestamp=*Z, request_id=\"*-*\", event]"
+        filterPattern: "[timestamp=*Z, request_id=\"*-*\", correlation_id=\"*-*\", event]"
+```
 
 # How it works
 This plugin automates the process described in the [readme](https://github.com/SumoLogic/sumologic-aws-lambda/tree/master/cloudwatchlogs/README.md) provided by Sumologic.
