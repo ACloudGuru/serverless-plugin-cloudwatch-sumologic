@@ -8,6 +8,7 @@ class Plugin {
     constructor(serverless, options) {
         this.serverless = serverless;
         this.options = options;
+        this.provider = this.serverless.getProvider('aws');
 
         this.hooks = {
             'before:deploy:createDeploymentArtifacts': this.beforeDeployCreateDeploymentArtifacts.bind(this),
@@ -21,6 +22,13 @@ class Plugin {
     }
 
     beforeDeployCreateDeploymentArtifacts() {
+        this.serverless.cli.log('Checking if serverless is managing logs via cloudformation');
+        let cflogsEnabled = this.serverless.service.provider.cfLogs;
+
+        if (!cflogsEnabled) {
+            throw new Error('To use serverless-plugin-cloudwatch-sumologic you must have cfLogs set to true in the serverless.yml file. See https://serverless.com/framework/docs/providers/aws/guide/functions/#log-group-resources for more information.')
+        }
+
         this.serverless.cli.log('Adding Cloudwatch to Sumologic lambda function');
         let functionPath = this.getEnvFilePath();
 
@@ -46,7 +54,7 @@ class Plugin {
     }
 
     deployCompileEvents() {
-        this.serverless.cli.log('Generating subscription filters and lambda function log groups');
+        this.serverless.cli.log('Generating subscription filters');
         let filterPattern = !!this.serverless.service.custom.shipLogs.filterPattern ? this.serverless.service.custom.shipLogs.filterPattern : "[timestamp=*Z, request_id=\"*-*\", event]";
 
         const filterBaseStatement = {
@@ -61,15 +69,9 @@ class Plugin {
                 FilterPattern: filterPattern
             },
             DependsOn: ["cloudwatchLogsLambdaPermission"]
-        }
-
-        const logGroupBaseStatement = {
-            Type: "AWS::Logs::LogGroup",
-            Properties: {}
         };
 
         Object.freeze(filterBaseStatement); // Make it immutable
-        Object.freeze(logGroupBaseStatement);
 
         let cloudwatchLogsLambdaPermission = {
             Type: "AWS::Lambda::Permission",
@@ -83,34 +85,32 @@ class Plugin {
                 Action: "lambda:InvokeFunction",
                 Principal: "logs.us-east-1.amazonaws.com"
             }
-        }
+        };
 
         this.serverless.service.provider.compiledCloudFormationTemplate.Resources.cloudwatchLogsLambdaPermission = cloudwatchLogsLambdaPermission;
 
         this.serverless.service.getAllFunctions().forEach((functionName) => {
-            if (functionName !== 'sumologicShippingFunction'){
+            if (functionName !== 'sumologicShippingFunction') {
                 const functionObj = this.serverless.service.getFunction(functionName);
 
-                let filterStatement = filterBaseStatement;
-                let logGroupStatement = logGroupBaseStatement;
+                // We will be able to do this soon
+                // const logGroupLogicalId = this.provider.naming.getLogGroupLogicalId(functionName);
 
-                filterStatement.Properties.LogGroupName = '/aws/lambda/' + functionObj.name;
-                logGroupStatement.Properties.LogGroupName = '/aws/lambda/' + functionObj.name;
+                const logGroupLogicalId = getLogGroupLogicalId(functionName)
+
+                let filterStatement = filterBaseStatement;
+
+                filterStatement.Properties.LogGroupName = `/aws/lambda/${functionObj.name}`;
 
                 let filterStatementName = functionName + 'SumoLogicSubscriptionFilter';
-                let logGroupStatementName = functionName + 'LogGroup';
 
-                filterStatement.DependsOn.push(logGroupStatementName);
+                filterStatement.DependsOn.push(logGroupLogicalId);
 
                 let newFilterStatement = {
                     [`${filterStatementName}`]: filterStatement
                 };
 
-                let newLogGroupStatement = {
-                    [`${logGroupStatementName}`]: logGroupStatement
-                };
-
-                _.merge(this.serverless.service.provider.compiledCloudFormationTemplate.Resources, newFilterStatement, newLogGroupStatement);
+                _.merge(this.serverless.service.provider.compiledCloudFormationTemplate.Resources, newFilterStatement);
             }
         });
     }
@@ -133,3 +133,18 @@ class Plugin {
 }
 
 module.exports = Plugin;
+
+// Remove after 1.1.1 release
+function normalizeName(name) {
+    return `${_.upperFirst(name)}`;
+}
+
+function getNormalizedFunctionName(functionName) {
+    return normalizeName(functionName
+        .replace(/-/g, 'Dash')
+        .replace(/_/g, 'Underscore'));
+}
+
+function getLogGroupLogicalId(functionName) {
+    return `${getNormalizedFunctionName(functionName)}LogGroup`;
+}
