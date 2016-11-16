@@ -46,10 +46,9 @@ class Plugin {
 
         fs.writeFileSync(path.join(functionPath, 'handler.js'), handlerFunction);
 
-        this.serverless.service.functions.sumologicShippingFunction = {
+        this.serverless.service.functions.sumologicShipping = {
             handler: 'sumologic-shipping-function/handler.handler',
-            events: [],
-            name: 'sumologic-shipping-function'
+            events: []
         };
     }
 
@@ -62,7 +61,7 @@ class Plugin {
             Properties: {
                 DestinationArn: {
                     "Fn::GetAtt": [
-                        "SumologicShippingFunctionLambdaFunction",
+                        "SumologicShippingLambdaFunction",
                         "Arn"
                     ]
                 },
@@ -78,7 +77,7 @@ class Plugin {
             Properties: {
                 FunctionName: {
                     "Fn::GetAtt": [
-                        "SumologicShippingFunctionLambdaFunction",
+                        "SumologicShippingLambdaFunction",
                         "Arn"
                     ]
                 },
@@ -90,7 +89,7 @@ class Plugin {
         this.serverless.service.provider.compiledCloudFormationTemplate.Resources.cloudwatchLogsLambdaPermission = cloudwatchLogsLambdaPermission;
 
         this.serverless.service.getAllFunctions().forEach((functionName) => {
-            if (functionName !== 'sumologicShippingFunction') {
+            if (functionName !== 'sumologicShipping') {
                 const functionObj = this.serverless.service.getFunction(functionName);
 
                 // We will be able to do this soon
