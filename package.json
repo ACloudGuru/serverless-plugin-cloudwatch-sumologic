@@ -1,6 +1,6 @@
 {
   "name": "serverless-plugin-cloudwatch-sumologic",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Serverless Plugin to enable log delivery from cloudwatch to sumologic via a lambda function and log group subscriptions",
   "main": "src/index.js",
   "repository": {
@@ -10,6 +10,7 @@
   "author": "Daniel Parker <dparker.tech@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "lodash": "^4.16.4"
+    "lodash": "^4.16.4",
+    "serverless": "^1.1.0"
   }
 }
