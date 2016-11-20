@@ -71,7 +71,9 @@ class Plugin {
         };
 
         Object.freeze(filterBaseStatement); // Make it immutable
+        
         const principal = `logs.${this.serverless.service.provider.region}.amazonaws.com`;
+
         let cloudwatchLogsLambdaPermission = {
             Type: "AWS::Lambda::Permission",
             Properties: {
