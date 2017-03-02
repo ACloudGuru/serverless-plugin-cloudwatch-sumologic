@@ -1,6 +1,6 @@
 {
   "name": "serverless-plugin-cloudwatch-sumologic",
-  "version": "0.0.8",
+  "version": "0.0.9-alpha.0",
   "description": "Serverless Plugin to enable log delivery from cloudwatch to sumologic via a lambda function and log group subscriptions",
   "main": "src/index.js",
   "repository": {

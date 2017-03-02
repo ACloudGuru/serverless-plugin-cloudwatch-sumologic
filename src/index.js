@@ -29,6 +29,11 @@ class Plugin {
             throw new Error('To use serverless-plugin-cloudwatch-sumologic you must have cfLogs set to true in the serverless.yml file. See https://serverless.com/framework/docs/providers/aws/guide/functions/#log-group-resources for more information.')
         }
 
+        if (!!this.serverless.service.custom.shipLogs.arn) {
+            //use existing specified handler ARN
+            return;
+        }
+
         this.serverless.cli.log('Adding Cloudwatch to Sumologic lambda function');
         let functionPath = this.getEnvFilePath();
 
@@ -56,33 +61,35 @@ class Plugin {
         this.serverless.cli.log('Generating subscription filters');
         let filterPattern = !!this.serverless.service.custom.shipLogs.filterPattern ? this.serverless.service.custom.shipLogs.filterPattern : "[timestamp=*Z, request_id=\"*-*\", event]";
 
+        let destinationArn = null;
+        if (!!this.serverless.service.custom.shipLogs.arn) {
+            destinationArn = this.serverless.service.custom.shipLogs.arn;
+        } else {
+            destinationArn = {
+                "Fn::GetAtt": [
+                    "SumologicShippingLambdaFunction",
+                    "Arn"
+                ]
+            };
+        }
+
         const filterBaseStatement = {
             Type: "AWS::Logs::SubscriptionFilter",
             Properties: {
-                DestinationArn: {
-                    "Fn::GetAtt": [
-                        "SumologicShippingLambdaFunction",
-                        "Arn"
-                    ]
-                },
+                DestinationArn: destinationArn,
                 FilterPattern: filterPattern
             },
             DependsOn: ["cloudwatchLogsLambdaPermission"]
         };
 
         Object.freeze(filterBaseStatement); // Make it immutable
-        
+
         const principal = `logs.${this.serverless.service.provider.region}.amazonaws.com`;
 
         let cloudwatchLogsLambdaPermission = {
             Type: "AWS::Lambda::Permission",
             Properties: {
-                FunctionName: {
-                    "Fn::GetAtt": [
-                        "SumologicShippingLambdaFunction",
-                        "Arn"
-                    ]
-                },
+                FunctionName: destinationArn,
                 Action: "lambda:InvokeFunction",
                 Principal: principal
             }
