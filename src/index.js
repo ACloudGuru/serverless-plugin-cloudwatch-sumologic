@@ -22,13 +22,6 @@ class Plugin {
     }
 
     beforeDeployCreateDeploymentArtifacts() {
-        this.serverless.cli.log('Checking if serverless is managing logs via cloudformation');
-        let cflogsEnabled = this.serverless.service.provider.cfLogs;
-
-        if (!cflogsEnabled) {
-            throw new Error('To use serverless-plugin-cloudwatch-sumologic you must have cfLogs set to true in the serverless.yml file. See https://serverless.com/framework/docs/providers/aws/guide/functions/#log-group-resources for more information.')
-        }
-
         if (!!this.serverless.service.custom.shipLogs.arn) {
             //use existing specified handler ARN
             return;
@@ -49,12 +42,18 @@ class Plugin {
 
         let handlerFunction = templateFile.replace('%collectorUrl%', collectorUrl);
 
+        let customRole = this.serverless.service.custom.shipLogs.role;
+
         fs.writeFileSync(path.join(functionPath, 'handler.js'), handlerFunction);
 
         this.serverless.service.functions.sumologicShipping = {
             handler: 'sumologic-shipping-function/handler.handler',
             events: []
         };
+
+        if (!!customRole) {
+            this.serverless.service.functions.sumologicShipping.role = customRole
+        }
     }
 
     deployCompileEvents() {

@@ -18,6 +18,7 @@ custom:
 
         # Optional, default pattern is "[timestamp=*Z, request_id=\"*-*\", event]"
         filterPattern: "[timestamp=*Z, request_id=\"*-*\", correlation_id=\"*-*\", event]"
+        role: ARN of IAM role to use
 ```
 
 # How it works
@@ -33,12 +34,7 @@ Upon running `sls deploy` it will...
 4. Wait for the stack creation/update to complete and then delete the temporarily created function source directory.
 
 # Caveats
-You must be running serverless 1.1.0 or higher and have the following configuration in your `serverless.yml`
-to ensure that the log groups exist and are managed by the same CloudFormation script.
-```yaml
-provider:
-    cfLogs: true
-```
+You must be running serverless 1.6.0 or higher.
 
 # Contribute
 Please fork this repo to make changes and then issue a pull request back to this repo.
