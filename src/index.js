@@ -30,11 +30,16 @@ class Plugin {
 
         // The function must exist before we set up the provider,
         // so that the created log group can be depended on appropriately
+        let functionExtension = this.serverless.service.custom.shipLogs.function || {}
+        const functionName = functionExtension.name || 'sumologicShipping'
+
         this.serverless.service.functions.sumologicShipping = {
             handler: 'sumologic-shipping-function/handler.handler',
             events: [],
-            name: 'sumologicShipping'
+            name: functionName
         };
+
+        _.merge(this.serverless.service.functions.sumologicShipping, functionExtension)
     }
 
     beforeDeployCreateDeploymentArtifacts() {
@@ -58,13 +63,10 @@ class Plugin {
 
         let handlerFunction = templateFile.replace('%collectorUrl%', collectorUrl);
 
-        let customRole = this.serverless.service.custom.shipLogs.role;
-
         fs.writeFileSync(path.join(functionPath, 'handler.js'), handlerFunction);
 
-        if (!!customRole) {
-            this.serverless.service.functions.sumologicShipping.role = customRole
-        }
+
+
     }
 
     deployCompileEvents() {
