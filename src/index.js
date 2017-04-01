@@ -58,7 +58,12 @@ class Plugin {
 
     deployCompileEvents() {
         this.serverless.cli.log('Generating subscription filters');
-        let filterPattern = !!this.serverless.service.custom.shipLogs.filterPattern ? this.serverless.service.custom.shipLogs.filterPattern : "[timestamp=*Z, request_id=\"*-*\", event]";
+        let filterPattern = null
+        if (this.serverless.service.custom.shipLogs.filterPattern === null || this.serverless.service.custom.shipLogs.filterPattern === undefined) {
+            filterPattern = "[timestamp=*Z, request_id=\"*-*\", event]"
+        } else {
+            filterPattern = this.serverless.service.custom.shipLogs.filterPattern
+        }
 
         let destinationArn = null;
         if (!!this.serverless.service.custom.shipLogs.arn) {
