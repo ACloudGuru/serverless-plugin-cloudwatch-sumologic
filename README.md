@@ -18,7 +18,9 @@ custom:
 
         # Optional, default pattern is "[timestamp=*Z, request_id=\"*-*\", event]"
         filterPattern: "[timestamp=*Z, request_id=\"*-*\", correlation_id=\"*-*\", event]"
-        role: ARN of IAM role to use
+        # Optional
+        function:
+            # Can override any handler paramters
 ```
 
 # How it works
