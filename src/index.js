@@ -11,6 +11,7 @@ class Plugin {
         this.provider = this.serverless.getProvider('aws');
 
         this.hooks = {
+            'before:deploy:setupProviderConfiguration': this.beforeDeploySetupProviderConfiguration.bind(this),
             'before:deploy:createDeploymentArtifacts': this.beforeDeployCreateDeploymentArtifacts.bind(this),
             'deploy:compileEvents': this.deployCompileEvents.bind(this),
             'after:deploy:deploy': this.afterDeployDeploy.bind(this)
@@ -19,6 +20,21 @@ class Plugin {
 
     getEnvFilePath() {
         return path.join(this.serverless.config.servicePath, 'sumologic-shipping-function');
+    }
+
+    beforeDeploySetupProviderConfiguration() {
+        if (!!this.serverless.service.custom.shipLogs.arn) {
+            //use existing specified handler ARN
+            return;
+        }
+
+        // The function must exist before we set up the provider,
+        // so that the created log group can be depended on appropriately
+        this.serverless.service.functions.sumologicShipping = {
+            handler: 'sumologic-shipping-function/handler.handler',
+            events: [],
+            name: 'sumologicShipping'
+        };
     }
 
     beforeDeployCreateDeploymentArtifacts() {
@@ -45,11 +61,6 @@ class Plugin {
         let customRole = this.serverless.service.custom.shipLogs.role;
 
         fs.writeFileSync(path.join(functionPath, 'handler.js'), handlerFunction);
-
-        this.serverless.service.functions.sumologicShipping = {
-            handler: 'sumologic-shipping-function/handler.handler',
-            events: []
-        };
 
         if (!!customRole) {
             this.serverless.service.functions.sumologicShipping.role = customRole
