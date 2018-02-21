@@ -10,7 +10,9 @@
   "author": "Daniel Parker <dparker.tech@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "lodash": "^4.16.4"
+    "lodash.assignin": "^4.2.0",
+    "lodash.clonedeep": "^4.5.0",
+    "lodash.startcase": "^4.4.0"
   },
   "peerDependencies": {
     "serverless": "^1.6.0"
