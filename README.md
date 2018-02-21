@@ -40,5 +40,10 @@ You must be running serverless 1.6.0 or higher.
 Please fork this repo to make changes and then issue a pull request back to this repo.
 No unit tests are included at this time. Unit tests will be added before this goes into version 1.0.0
 
+# Testing
+Tests are written using Mocha, Sinon, Chai, using Rewire
+
+Run with `npm test`
+
 # Contributors
 [Daniel Parker (@rlgod)](https://github.com/rlgod)

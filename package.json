@@ -1,8 +1,11 @@
 {
   "name": "serverless-plugin-cloudwatch-sumologic",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Serverless Plugin to enable log delivery from cloudwatch to sumologic via a lambda function and log group subscriptions",
   "main": "src/index.js",
+  "scripts": {
+    "test": "mocha tests/"
+  },
   "repository": {
     "url": "https://github.com/ACloudGuru/serverless-plugin-cloudwatch-sumologic.git",
     "type": "git"
@@ -16,5 +19,11 @@
   },
   "peerDependencies": {
     "serverless": "^1.6.0"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^5.0.1",
+    "rewire": "^3.0.2",
+    "sinon": "^4.3.0"
   }
 }
