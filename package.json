@@ -4,7 +4,7 @@
   "description": "Serverless Plugin to enable log delivery from cloudwatch to sumologic via a lambda function and log group subscriptions",
   "main": "src/index.js",
   "scripts": {
-    "test": "mocha tests/"
+    "test": "mocha"
   },
   "repository": {
     "url": "https://github.com/ACloudGuru/serverless-plugin-cloudwatch-sumologic.git",
