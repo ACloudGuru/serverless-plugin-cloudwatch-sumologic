@@ -2,13 +2,30 @@
 
 const path = require('path');
 const fs = require('fs');
-const _ = require('lodash');
+
+const assignin = require('lodash.assignin');
+const cloneDeep = require('lodash.clonedeep');
+const startCase = require('lodash.startcase');
+
+
+const fnGetAtt = logicalId => ({ "Fn::GetAtt": [ logicalId, "Arn" ] });
+const fnGetRef = logicalId => ({ Ref: logicalId });
+
+const normalizeName = name => name && `${startCase(name).split(' ').join('')}`;
+
+const getNormalizedFunctionName = functionName =>
+    normalizeName(functionName.replace(/[-_]/g, ' '));
+
+const getLogGroupLogicalId = functionName =>
+    `${getNormalizedFunctionName(functionName)}LogGroup`;
+
 
 class Plugin {
     constructor(serverless, options) {
         this.serverless = serverless;
         this.options = options;
         this.provider = this.serverless.getProvider('aws');
+        this.sumoFnName = 'sumologic-shipping-function'
 
         this.hooks = {
             'before:deploy:createDeploymentArtifacts': this.beforeDeployCreateDeploymentArtifacts.bind(this),
@@ -18,7 +35,7 @@ class Plugin {
     }
 
     getEnvFilePath() {
-        return path.join(this.serverless.config.servicePath, 'sumologic-shipping-function');
+        return path.join(this.serverless.config.servicePath, `${this.sumoFnName}`);
     }
 
     beforeDeployCreateDeploymentArtifacts() {
@@ -28,26 +45,26 @@ class Plugin {
         }
 
         this.serverless.cli.log('Adding Cloudwatch to Sumologic lambda function');
-        let functionPath = this.getEnvFilePath();
+        const functionPath = this.getEnvFilePath();
 
         if (!fs.existsSync(functionPath)) {
             fs.mkdirSync(functionPath);
         }
 
-        let templatePath = path.resolve(__dirname, '../sumologic-function/handler.template.js');
+        const templatePath = path.resolve(__dirname, '../sumologic-function/handler.template.js');
 
-        let templateFile = fs.readFileSync(templatePath, 'utf-8');
+        const templateFile = fs.readFileSync(templatePath, 'utf-8');
 
-        let collectorUrl = this.serverless.service.custom.shipLogs.collectorUrl;
+        const collectorUrl = this.serverless.service.custom.shipLogs.collectorUrl;
 
-        let handlerFunction = templateFile.replace('%collectorUrl%', collectorUrl);
+        const handlerFunction = templateFile.replace('%collectorUrl%', collectorUrl);
 
-        let customRole = this.serverless.service.custom.shipLogs.role;
+        const customRole = this.serverless.service.custom.shipLogs.role;
 
         fs.writeFileSync(path.join(functionPath, 'handler.js'), handlerFunction);
 
         this.serverless.service.functions.sumologicShipping = {
-            handler: 'sumologic-shipping-function/handler.handler',
+            handler: `${this.sumoFnName}/handler.handler`,
             events: []
         };
 
@@ -58,18 +75,17 @@ class Plugin {
 
     deployCompileEvents() {
         this.serverless.cli.log('Generating subscription filters');
-        let filterPattern = !!this.serverless.service.custom.shipLogs.filterPattern ? this.serverless.service.custom.shipLogs.filterPattern : "[timestamp=*Z, request_id=\"*-*\", event]";
+        const filterPattern = !!this.serverless.service.custom.shipLogs.filterPattern
+            ? this.serverless.service.custom.shipLogs.filterPattern
+            : "[timestamp=*Z, request_id=\"*-*\", event]";
+        const principal = `logs.${this.serverless.service.provider.region}.amazonaws.com`;
+        const slsResources = this.serverless.service.provider.compiledCloudFormationTemplate.Resources;
 
         let destinationArn = null;
         if (!!this.serverless.service.custom.shipLogs.arn) {
             destinationArn = this.serverless.service.custom.shipLogs.arn;
         } else {
-            destinationArn = {
-                "Fn::GetAtt": [
-                    "SumologicShippingLambdaFunction",
-                    "Arn"
-                ]
-            };
+            destinationArn = fnGetAtt("SumologicShippingLambdaFunction");
         }
 
         const filterBaseStatement = {
@@ -78,46 +94,45 @@ class Plugin {
                 DestinationArn: destinationArn,
                 FilterPattern: filterPattern
             },
-            DependsOn: ["cloudwatchLogsLambdaPermission"]
+            DependsOn: []
         };
 
-        Object.freeze(filterBaseStatement); // Make it immutable
-
-        const principal = `logs.${this.serverless.service.provider.region}.amazonaws.com`;
-
-        let cloudwatchLogsLambdaPermission = {
+        const cloudwatchLogsLambdaPermission = {
             Type: "AWS::Lambda::Permission",
             Properties: {
                 FunctionName: destinationArn,
                 Action: "lambda:InvokeFunction",
-                Principal: principal
+                Principal: principal,
+                SourceAccount: fnGetRef("AWS::AccountId"),
             }
         };
 
-        this.serverless.service.provider.compiledCloudFormationTemplate.Resources.cloudwatchLogsLambdaPermission = cloudwatchLogsLambdaPermission;
 
-        this.serverless.service.getAllFunctions().forEach((functionName) => {
-            if (functionName !== 'sumologicShipping') {
-                const functionObj = this.serverless.service.getFunction(functionName);
-
-                // We will be able to do this soon
-                // const logGroupLogicalId = this.provider.naming.getLogGroupLogicalId(functionName);
-
+        this.serverless.service.getAllFunctions().forEach(fnName => {
+            if (fnName !== 'sumologicShipping') {
+                // console.log(fnName)
+                const functionName = getNormalizedFunctionName(fnName);
+                // console.log(functionName)
                 const logGroupLogicalId = getLogGroupLogicalId(functionName)
+                this.serverless.cli.log(logGroupLogicalId)
 
-                let filterStatement = filterBaseStatement;
+                const filterStatement = cloneDeep(filterBaseStatement);
+                const filterStatementName = functionName + 'SubscriptionFilter';
+                const logGroupPermissions = cloneDeep(cloudwatchLogsLambdaPermission);
+                const logGroupPermissionName = functionName + 'InvokePermission';
 
-                filterStatement.Properties.LogGroupName = `/aws/lambda/${functionObj.name}`;
+                filterStatement.Properties.LogGroupName = fnGetRef(logGroupLogicalId);
+                filterStatement.DependsOn.push(logGroupPermissionName);
+                logGroupPermissions.Properties.SourceArn = fnGetAtt(logGroupLogicalId);
 
-                let filterStatementName = functionName + 'SumoLogicSubscriptionFilter';
-
-                filterStatement.DependsOn.push(logGroupLogicalId);
-
-                let newFilterStatement = {
+                const newFilterStatement = {
                     [`${filterStatementName}`]: filterStatement
                 };
+                const newLogGroupPermissions = {
+                    [`${logGroupPermissionName}`]: logGroupPermissions
+                }
 
-                _.merge(this.serverless.service.provider.compiledCloudFormationTemplate.Resources, newFilterStatement);
+                assignin(slsResources, newLogGroupPermissions, newFilterStatement);
             }
         });
     }
@@ -140,18 +155,3 @@ class Plugin {
 }
 
 module.exports = Plugin;
-
-// Remove after 1.1.1 release
-function normalizeName(name) {
-    return `${_.upperFirst(name)}`;
-}
-
-function getNormalizedFunctionName(functionName) {
-    return normalizeName(functionName
-        .replace(/-/g, 'Dash')
-        .replace(/_/g, 'Underscore'));
-}
-
-function getLogGroupLogicalId(functionName) {
-    return `${getNormalizedFunctionName(functionName)}LogGroup`;
-}
