@@ -11,7 +11,7 @@ Plugin which auto-subscribes a log delivery lambda function to lambda log groups
 ```yaml
 plugins:
   - serverless-plugin-cloudwatch-sumologic
-  
+
 custom:
     shipLogs:
         # Required
@@ -19,8 +19,8 @@ custom:
         # OR
         collectorUrl: Paste your url from step 1. here
 
-        # Optional, default pattern is "[timestamp=*Z, request_id=\"*-*\", event]"
-        filterPattern: "[timestamp=*Z, request_id=\"*-*\", correlation_id=\"*-*\", event]"
+        # Optional. By default no pattern is specified.
+        filterPattern: "[log_level, timestamp=*Z, request_id=\"*-*\", correlation_id=\"*-*\", event]"
         role: ARN of IAM role to use
 ```
 
@@ -36,6 +36,11 @@ Upon running `sls deploy` it will...
     1. CloudFormation Subscription Filter Resource linking the log groups created by serverless framework to the sumologic lambda function.
     2. Permissions to Invoke the logging function, as a Resource.
 3. Wait for the stack creation/update to complete and then delete the temporarily created function source directory.
+
+# Upgrading
+
+See [UPGRADING.md](https://github.com/ACloudGuru/serverless-plugin-cloudwatch-sumologic/blob/master/UPGRADING.md)
+for information on upgrading from previous versions of the plugin.
 
 # Caveats
 You must be running serverless 1.25.0 or higher.
