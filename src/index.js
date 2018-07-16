@@ -77,7 +77,7 @@ class Plugin {
         this.serverless.cli.log('Generating subscription filters');
         const filterPattern = !!this.serverless.service.custom.shipLogs.filterPattern
             ? this.serverless.service.custom.shipLogs.filterPattern
-            : "[timestamp=*Z, request_id=\"*-*\", event]";
+            : "";
         const principal = `logs.${this.serverless.service.provider.region}.amazonaws.com`;
         const slsResources = this.serverless.service.provider.compiledCloudFormationTemplate.Resources;
 
