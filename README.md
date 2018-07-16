@@ -11,7 +11,7 @@ Plugin which auto-subscribes a log delivery lambda function to lambda log groups
 ```yaml
 plugins:
   - serverless-plugin-cloudwatch-sumologic
-  
+
 custom:
     shipLogs:
         # Required
@@ -20,6 +20,18 @@ custom:
         collectorUrl: Paste your url from step 1. here
 
         # Optional, default pattern is "[timestamp=*Z, request_id=\"*-*\", event]"
+        # NOTE: Some runtimes report a log level as the first parameter, so the
+        #       default will not report any of your logs. You'll need to define
+        #       a `filterPattern` that matches the behavior of your runtime.
+        #
+        #       Most of the time, you can add `log_level` as the first parameter.
+        #       (e.g. "[log_level, timestamp = *Z, request_id, event]")
+        #
+        #       If you want to report everything, specify `filterPattern` as
+        #       an empty string ("").
+        #
+        #       See https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html
+        #       for more detailed information.
         filterPattern: "[timestamp=*Z, request_id=\"*-*\", correlation_id=\"*-*\", event]"
         role: ARN of IAM role to use
 ```
